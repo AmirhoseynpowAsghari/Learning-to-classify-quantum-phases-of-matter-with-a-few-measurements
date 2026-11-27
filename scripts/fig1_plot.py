@@ -91,16 +91,22 @@ def main():
         d["K_train_c"], np.array(d["train_c_states_labels"]), d["K_test_train_c"], ks_t, hs_t
     )
 
-    fig = plt.figure(figsize=(6, 11))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1])
+    # Figure height budget (inches), top to bottom: suptitle, panel (a),
+    # panels (b)/(c), legend. Using explicit gridspec top/bottom/hspace
+    # (rather than tight_layout, which does not reliably avoid collisions
+    # between a tall suptitle and the row-two titles) keeps every title and
+    # the bottom legend fully inside the saved canvas.
+    fig = plt.figure(figsize=(7.5, 12.5))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.32, wspace=0.3,
+                           top=0.91, bottom=0.08, left=0.1, right=0.97)
     ax_a = fig.add_subplot(gs[0, :])
     ax_b = fig.add_subplot(gs[1, 0])
     ax_c = fig.add_subplot(gs[1, 1])
 
     panel_a(ax_a, k_range, h_range)
-    panel_bc(ax_b, "(b) Uniform (in-distribution) training", ks_t, hs_t, grid_b,
+    panel_bc(ax_b, "(b) Uniform (in-distribution)\ntraining", ks_t, hs_t, grid_b,
              d["train_b_points"], k_range, h_range)
-    panel_bc(ax_c, "(c) Line h=0.25 (out-of-distribution) training", ks_t, hs_t, grid_c,
+    panel_bc(ax_c, "(c) Line h=0.25 (out-of-\ndistribution) training", ks_t, hs_t, grid_c,
              d["train_c_points"], k_range, h_range)
 
     legend_elems = [
@@ -110,14 +116,14 @@ def main():
         plt.Rectangle((0, 0), 1, 1, color=PHASE_COLORS[FLOATING], ec="black", label="Floating"),
         Line2D([0], [0], marker="x", color="black", linestyle="None", label="Training points"),
     ]
-    fig.legend(handles=legend_elems, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.02))
+    fig.legend(handles=legend_elems, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.005),
+               frameon=True)
 
     fig.suptitle(
         f"ANNNI model, N={cfg['N']} spins, DMRG bond dim {cfg['MAX_BOND']}\n"
         f"(reproduction of figure 1, reduced grid {cfg['GRID_NK']}x{cfg['GRID_NH']})",
-        fontsize=10,
+        fontsize=10, y=0.985,
     )
-    fig.tight_layout(rect=[0, 0.03, 1, 0.96])
     out_path = FIG_DIR / "figure1.png"
     fig.savefig(out_path, dpi=160)
     print("wrote", out_path)
