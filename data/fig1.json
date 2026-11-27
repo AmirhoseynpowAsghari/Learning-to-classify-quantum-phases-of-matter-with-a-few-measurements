@@ -1,0 +1,23 @@
+{
+  "config": {
+    "N": 50,
+    "MAX_BOND": 20,
+    "K_RANGE": [
+      0.0,
+      1.0
+    ],
+    "H_RANGE": [
+      0.0,
+      2.0
+    ],
+    "GRID_NK": 26,
+    "GRID_NH": 33,
+    "TRAIN_B_NK": 8,
+    "TRAIN_B_NH": 10,
+    "TRAIN_C_H": 0.25,
+    "TRAIN_C_NK": 40
+  },
+  "n_train_b_states": 160,
+  "n_train_c_states": 80,
+  "n_test": 858
+}
