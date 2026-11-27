@@ -20,8 +20,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from qpom.annni_phase import (AP, FERRO, FLOATING, PARA, h_AP, h_I, h_KT,
-                               phase_label_grid)
+from qpom.annni_phase import AP, FERRO, FLOATING, PARA, h_AP, h_I, h_KT
 from qpom.svm import KernelSVM
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -32,28 +31,54 @@ PHASE_COLORS = {FERRO: "#3f7f74", PARA: "#f4c430", AP: "#7b2d8e", FLOATING: "#ff
 CMAP = ListedColormap([PHASE_COLORS[i] for i in range(4)])
 
 
-def draw_transition_lines(ax, k_range=(0.0, 1.0)):
+def draw_transition_lines(ax, k_range=(0.0, 1.0), color_normal="black", color_kt="red"):
     k1 = np.linspace(max(k_range[0], 1e-4), 0.5, 200)
-    ax.plot(k1, h_I(k1), color="black", lw=1.4, zorder=5)
+    ax.plot(k1, h_I(k1), color=color_normal, lw=1.4, zorder=5)
     k2 = np.linspace(0.5, k_range[1], 200)
-    ax.plot(k2, h_AP(k2), color="black", lw=1.4, zorder=5)
-    ax.plot(k2, h_KT(k2), color="red", lw=1.4, zorder=5)
+    ax.plot(k2, h_AP(k2), color=color_normal, lw=1.4, zorder=5)
+    ax.plot(k2, h_KT(k2), color=color_kt, lw=1.4, zorder=5)
 
 
 def panel_a(ax, k_range, h_range):
-    nk, nh = 400, 400
-    ks = np.linspace(k_range[0], k_range[1], nk)
-    hs = np.linspace(h_range[0], h_range[1], nh)
-    KK, HH = np.meshgrid(ks, hs)
-    labels = phase_label_grid(KK, HH)
-    ax.pcolormesh(ks, hs, labels, cmap=CMAP, vmin=0, vmax=3, shading="auto")
-    draw_transition_lines(ax, k_range)
-    ax.set_title("(a) Theoretical phase diagram")
+    # Unlike panels (b)/(c) -- which show an SVM's predicted phase at every
+    # grid point, so are naturally rendered as filled regions -- panel (a)
+    # in the paper is a *schematic* of the expected phase diagram in the
+    # thermodynamic limit: a plain white background with just the boundary
+    # curves and bold phase-name labels (no color fill at all). The earlier
+    # version of this script incorrectly filled panel (a) with the same
+    # solid colors as (b)/(c), which is why e.g. the paramagnet region
+    # showed up solid yellow here but plain white background in the paper.
+    ax.set_xlim(k_range)
+    ax.set_ylim(h_range)
+    draw_transition_lines(ax, k_range, color_normal="forestgreen", color_kt="red")
+    ax.set_title("(a) Expected phase diagram (thermodynamic limit)")
     ax.set_xlabel("k")
     ax.set_ylabel("h")
-    ax.text(0.08, 1.6, "Ferromagnet", fontsize=8, weight="bold")
-    ax.text(0.65, 1.7, "Paramagnet", fontsize=8, weight="bold")
-    ax.text(0.75, 0.15, "Antiphase", fontsize=8, weight="bold")
+
+    ax.text(0.08, 1.6, "Ferromagnet", fontsize=9, weight="bold")
+    ax.text(0.62, 1.7, "Paramagnet", fontsize=9, weight="bold")
+    ax.text(0.78, 0.12, "Antiphase", fontsize=9, weight="bold")
+
+    # Annotate the floating-phase sliver and the two transition-line types,
+    # mirroring the callouts in the published figure.
+    ax.annotate(
+        "Floating phase", xy=(0.58, 0.25), xytext=(0.35, 0.55), fontsize=8, weight="bold",
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.3"),
+    )
+    ax.annotate(
+        "Second order\ntransitions", xy=(0.25, 0.75), xytext=(0.45, 1.25), fontsize=7.5,
+        ha="center",
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=-0.15"),
+    )
+    ax.annotate(
+        "", xy=(0.52, 0.03), xytext=(0.45, 1.25),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.15"),
+    )
+    ax.annotate(
+        "Kosterlitz-Thouless\ntransition", xy=(0.85, 0.62), xytext=(0.78, 1.15), fontsize=7.5,
+        ha="center", color="black",
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=-0.2", color="black"),
+    )
 
 
 def predict_grid(K_train, y_train, K_test_train, ks_t, hs_t):
