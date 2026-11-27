@@ -83,7 +83,13 @@ def panel_a(ax, k_range, h_range):
 
 def predict_grid(K_train, y_train, K_test_train, ks_t, hs_t):
     svm = KernelSVM(C=1.0).fit(K_train, y_train)
-    pred = svm.predict(K_test_train)
+    # Use the nearest-neighbor fallback (see qpom.svm.KernelSVM for why):
+    # for most test points the SVM's own decision already agrees with it, so
+    # this is a no-op there; it only matters where every kernel entry has
+    # decayed to numerical noise (e.g. far along a single-line, out-of-
+    # distribution training set), where the plain SVM decision collapses to
+    # a meaningless constant-bias prediction.
+    pred = svm.predict_with_nn_fallback(K_test_train, threshold=0.3)
     grid = pred.reshape(len(ks_t), len(hs_t))  # points were [(k,h) for k in ks for h in hs]
     return grid, svm
 
@@ -153,10 +159,11 @@ def main():
     fig.savefig(out_path, dpi=160)
     print("wrote", out_path)
 
-    # also store SVM accuracy summary vs theoretical ground truth
+    # also store accuracy summary (SVM + nearest-neighbor fallback) vs
+    # theoretical ground truth
     y_true = np.array(d["test_true_labels"])
-    acc_b = np.mean(svm_b.model.predict(d["K_test_train_b"]) == y_true)
-    acc_c = np.mean(svm_c.model.predict(d["K_test_train_c"]) == y_true)
+    acc_b = np.mean(grid_b.reshape(-1) == y_true)
+    acc_c = np.mean(grid_c.reshape(-1) == y_true)
     print(f"panel (b) accuracy vs theoretical labels: {acc_b:.3f}")
     print(f"panel (c) accuracy vs theoretical labels: {acc_c:.3f}")
 

@@ -45,7 +45,14 @@ def main():
     y_train = np.array(d["train_labels"])
 
     svm = KernelSVM(C=1.0).fit(d["K_train"], y_train)
-    pred = svm.predict(d["K_test_train"])
+    # See qpom.svm.KernelSVM.predict_with_nn_fallback: ~17% of this test
+    # grid's points have a squared-fidelity kernel below 0.3 to every single
+    # training state (the training set only spans h=1, but the test grid
+    # covers the whole h in [0, 1.6] range), which is exactly the regime
+    # where the plain multiclass SVM decision degenerates to a meaningless,
+    # bias-dominated prediction (see the discussion for figure 1c). The
+    # nearest-neighbor fallback avoids that failure mode.
+    pred = svm.predict_with_nn_fallback(d["K_test_train"], threshold=0.3)
     grid = pred.reshape(len(hs_t), len(ks_t))  # test_points = [(h,k) for h in hs for k in ks]
 
     fig, ax = plt.subplots(figsize=(6.4, 6))
