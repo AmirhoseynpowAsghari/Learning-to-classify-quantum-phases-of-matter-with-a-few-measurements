@@ -155,7 +155,6 @@ values on a more powerful machine.
 | Figure 1 training points (panel b) | unspecified | 8 × 10 uniform grid |
 | Figure 1 training points (panel c) | unspecified | 40 along h=0.25 |
 | Figure 2a samples / repetitions | m=1000, 10 reps | m=250, 4 reps |
-| Figure 2a qubit range | N=4..16 (all) | N=4,6,8,...,16 |
 | Figure 3 test grid | 30 × 30 | 15 × 15 |
 | Figure 3 DMRG sweeps/tolerance | full convergence | ≤8 sweeps, tol=1e-6 |
 | Figure 3 transition lines (digitized from ref. [4]) | shown | omitted (not available to us) |
@@ -199,10 +198,41 @@ parameters used in each run.
   all-or-nothing SVM decision rule once evaluated far outside the training
   manifold.
 
-* **Figure 2(a)**: B² grows monotonically with N (roughly linearly) for
-  both sectors, with the odd sector consistently larger than the even one —
-  matching the paper's figure 2(a) trend, at reduced sampling (m=250 instead
-  of 1000, 4 repetitions instead of 10).
+* **Figure 2(a)**: B² grows monotonically (roughly linearly) with N for
+  both Z2-parity sectors, at reduced sampling (m=250 instead of 1000, 4
+  repetitions instead of 10). We originally only sampled even N
+  (4,6,8,...,16, 7 points), which produced a smooth curve; the real figure
+  2(a) visibly plots *every* integer N from 4 to 16 (13 points — note the
+  jagged "staircase" shape of its curves), so we fixed `fig2a_compute.py`
+  to do the same and recomputed. One discrepancy remains unresolved: the
+  paper's "even" curve is the larger one (reaching B²≈12.5 at N=16), while
+  in our reproduction it is consistently the Hamming-weight-*odd* sector
+  that comes out larger (reaching B²≈6.3 at N=16) and the even sector that
+  is smaller (≈3.0 at N=16) — i.e. the ordering of the two curves is
+  flipped and our overall scale is roughly 2x below the paper's. We spent a
+  long time trying to root-cause this as a code bug and could not find
+  one: the Z2 parity operator and its Hamming-weight-based sector indices
+  were verified against the same convention used successfully elsewhere in
+  this repo (`[H, prod_j Z_j] = 0` confirmed numerically, `prod_j X_j` does
+  not commute, consistent with `qpom.operators.parity_mpo_annni`); exact
+  sparse diagonalization was cross-checked against dense diagonalization
+  (identical to machine precision); the ordering is stable from m=100 up
+  to m=2000 (ruling out under-sampling); it persists whether the kernel
+  entries are squared or not, and whether the chain has open or periodic
+  boundaries; and it even persists when the sector-restricted ground state
+  is instead obtained the same way figure 1's training data is (bond-dim
+  20 DMRG + a Z2-penalty term), ruling out "exact diagonalization vs. DMRG"
+  as the cause. What we did confirm directly is that, for the Hamming-weight-even
+  sector, the exact lowest-energy state collapses onto an effectively
+  rank-~1 manifold across most of the random (h,k) samples (participation-ratio
+  effective rank ≈1.2 out of a possible 8 at N=4) — i.e. this sector's exact
+  ground state is nearly frozen over large parts of the sampled box — while
+  the odd sector stays comparatively diverse (effective rank ≈2.1). This
+  genuinely suppresses this sector's B², but we were not able to determine
+  from the paper text alone whether its own pipeline handles this
+  near-degenerate/frozen regime differently (e.g. a different ground-state
+  selection in symmetry-broken regions). We are reporting this honestly
+  rather than claiming a fix we could not verify.
 
 * **Figure 2(b)**: the kernel matrix of the figure 1(b) training states
   shows a clear block/tiled structure, reproducing the paper's statement

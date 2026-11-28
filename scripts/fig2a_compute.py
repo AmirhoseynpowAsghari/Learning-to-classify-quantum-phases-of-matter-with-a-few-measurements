@@ -36,7 +36,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qpom.genbound import build_annni_operators, generalization_bound_sq
 
-N_VALUES = [4, 6, 8, 10, 12, 14, 16]
+N_VALUES = list(range(4, 17))  # every integer N=4..16, matching the paper's
+# figure 2(a), which plots a point at *every* N (visible from the jagged
+# "staircase" shape of its curves) -- a previous version of this script only
+# sampled even N (4,6,8,...,16), which produced an artificially smooth curve
+# and silently skipped half the qubit counts the paper actually reports.
 M_SAMPLES = 250
 N_REPS = 4
 SEED = 12345
