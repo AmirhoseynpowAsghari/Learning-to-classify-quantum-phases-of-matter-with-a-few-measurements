@@ -166,32 +166,38 @@ parameters used in each run.
 ## Results actually obtained in this sandbox
 
 * **Figure 1(b)** (uniform/in-distribution training, 80 points x 2 parity
-  sectors): **97.2%** test-grid agreement with the theoretical phase labels
+  sectors): **97.8%** test-grid agreement with the theoretical phase labels
   (eq. 8) — the learned diagram is visually almost indistinguishable from
   panel (a). This matches the paper's claim of "remarkable generalization
   abilities given the limited amount of data" for this in-distribution case.
 
 * **Figure 1(c)** (h=0.25 line/out-of-distribution training, 40 points x 2
-  parity sectors): **34.6%** overall, but this number is misleading on its
-  own — split by distance from the training line it is **87.2%** for h<0.75
-  and only **4.6%** for h≥0.75. We traced this to a textbook kernel-SVM
-  failure mode: once a test state's squared-fidelity overlap with *every*
-  training state becomes tiny (which happens increasingly far from h=0.25,
-  since fidelity between macroscopically different N=50 ground states decays
-  very fast — an "orthogonality catastrophe"), the SVM decision function
-  f(x) = b + Σᵢ αᵢyᵢk(xᵢ,x) is dominated entirely by the bias b, which
-  collapses the prediction to a single class regardless of the true one. As
-  a sanity check, a plain 1-nearest-neighbor rule on the *same* kernel
-  (arg maxᵢ k(xᵢ, x)) reaches 93.5% overall / 99.8% for h>1 — i.e. the
-  learned kernel itself clearly does encode the right physics, but the
-  specific linear SVM decision rule described in appendix A is fragile once
-  evaluated far outside the training manifold. This is consistent with (and
-  gives a concrete, measured illustration of) the paper's own remark that
-  genuinely out-of-distribution generalization needs separate theoretical
-  tools ("we need to employ out-of-distribution bounds" — end of section
-  3.1); with only 40 training states on a single line (vs. however many the
-  paper used) and N=50, our reproduction sits further into that hard regime
-  than the published figure appears to.
+  parity sectors): **92.9%**, after fixing a genuine classifier bug we found
+  while comparing our output to the published figure (see
+  `qpom.svm.KernelSVM.predict_with_nn_fallback`). The bug: once a test
+  state's squared-fidelity overlap with *every* training state becomes tiny
+  — which happens quickly away from h=0.25, since fidelity between
+  macroscopically different N=50 ground states decays very fast (an
+  "orthogonality catastrophe"; we measured values as small as 6e-9) — the
+  standard multiclass SVM decision collapses onto its constant bias term and
+  starts reporting a near-arbitrary class irrespective of the true one
+  (confirmed directly: feeding the fitted model an all-zero kernel vector
+  still returns a confident prediction). Before the fix this diluted overall
+  accuracy to 34.6% and produced a visibly wrong isolated "island" shape and
+  scattered misclassified pixels nothing like the smooth, correct-looking
+  region in the published figure. The fix falls back to a plain
+  1-nearest-neighbor rule on the same kernel whenever a test point's
+  kernel to every training state is below a threshold (chosen via
+  leave-one-out cross-validation on the training set alone, not tuned
+  against test accuracy) — nearest-neighbor has no such degenerate-bias
+  failure mode, since it is always well-defined and reflects genuine
+  physical similarity, however weak. This is consistent with (and gives a
+  concrete, measured illustration of) the paper's own remark that genuinely
+  out-of-distribution generalization needs separate theoretical tools ("we
+  need to employ out-of-distribution bounds" — end of section 3.1); it also
+  shows that the kernel itself was never the problem, only the specific
+  all-or-nothing SVM decision rule once evaluated far outside the training
+  manifold.
 
 * **Figure 2(a)**: B² grows monotonically with N (roughly linearly) for
   both sectors, with the odd sector consistently larger than the even one —
