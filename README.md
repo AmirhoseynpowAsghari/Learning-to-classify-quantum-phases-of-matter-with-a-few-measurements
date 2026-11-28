@@ -231,8 +231,19 @@ parameters used in each run.
   genuinely suppresses this sector's B², but we were not able to determine
   from the paper text alone whether its own pipeline handles this
   near-degenerate/frozen regime differently (e.g. a different ground-state
-  selection in symmetry-broken regions). We are reporting this honestly
-  rather than claiming a fix we could not verify.
+  selection in symmetry-broken regions).
+  As a further check, we also compared exact diagonalization against
+  bond-dim-20 DMRG+penalty *at the exact same random (k,h) sample points*
+  (removing sampling noise as a confound): DMRG gave roughly 2x larger B²
+  for *both* sectors (consistent with it being an imperfectly-converged,
+  noisier estimate rather than a more accurate one), but did not change
+  which sector comes out larger — ruling this out too as an explanation
+  for the flipped ordering. We looked for the paper's own source code
+  (searched GitHub and paperswithcode.com) to settle this directly, but
+  none is published for this paper. We are reporting the discrepancy
+  honestly rather than claiming a fix we could not verify; the qualitative
+  claim the figure illustrates (B² grows at most linearly in N, for both
+  sectors) is still reproduced.
 
 * **Figure 2(b)**: the kernel matrix of the figure 1(b) training states
   shows a clear block/tiled structure, reproducing the paper's statement
